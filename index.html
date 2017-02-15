@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Perguntas</title>
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+
+    <script   src="https://code.jquery.com/jquery-3.1.1.js"   integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA="   crossorigin="anonymous"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+    <style>
+        body{
+            background:#2196F3;
+            overflow: hidden;
+            font-family: 'Lato', sans-serif;
+        }
+
+        .status-disconected{
+            border-radius: 0; font-weight: bold; color:white; background-color: #F44336; border: none;
+        }
+        .status-conected{
+            border-radius: 0; font-weight: bold; color:white; background-color: #8BC34A; border: none;
+        }
+
+        .animate
+        {
+            transition: all 0.1s;
+            -webkit-transition: all 0.1s;
+        }
+
+        .action-button, a, a:active
+        {
+            position: relative;
+            padding: 10px 40px;
+            margin: 0px 10px 10px 0px;
+            float: left;
+            border-radius: 10px;
+            font-family: 'Pacifico', cursive;
+            font-size: 25px;
+            color: #FFF;
+            text-decoration: none;
+        }
+
+        .blue
+        {
+            background-color: #3498DB;
+            border-bottom: 5px solid #2980B9;
+            text-shadow: 0px -2px #2980B9;
+        }
+
+        .red
+        {
+            background-color: #E74C3C;
+            border-bottom: 5px solid #BD3E31;
+            text-shadow: 0px -2px #BD3E31;
+        }
+
+        .green
+        {
+            background-color: #82BF56;
+            border-bottom: 5px solid #669644;
+            text-shadow: 0px -2px #669644;
+        }
+
+        .yellow
+        {
+            background-color: #F2CF66;
+            border-bottom: 5px solid #D1B358;
+            text-shadow: 0px -2px #D1B358;
+        }
+
+        .action-button:active
+        {
+            transform: translate(0px,5px);
+            -webkit-transform: translate(0px,5px);
+            border-bottom: 1px solid;
+        }
+        .q h1{
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="status alert alert-danger text-center" style="display: none;"></div>
+
+<div class="error-connected text-center" style="color:white; display: none;">
+    <img src="logo_site16.png" alt="" style="text-align: center;">
+</div>
+
+<div class="q">
+    <h1 class="text-justify quest" style="color:white; margin:50px 0;"></h1>
+
+    <div class="col-sm-6 col-sm-offset-3" style="margin-top: 40px;">
+        <div class="col-sm-6">
+            <a href="#" class="btn-ask action-button shadow animate green" data-result="y">Sim</a>
+        </div>
+        <div class="col-sm-6">
+            <a href="#" class="btn-ask action-button shadow animate red" data-result="n">Não</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    var conn = new WebSocket('ws://192.168.0.29:8080');
+
+    conn.onopen = function(e) {
+        $(".status").addClass("status-conected").html("Conectado!!").show();
+
+        //iniciando com as infromações inicias da pergunta
+        ask.show_ask();
+
+        setTimeout(function(){
+            $(".status").fadeOut();
+        }, 500);
+    };
+
+    conn.onerror = function(e) {
+        $(".status").removeClass("status-conected");
+        $(".status").addClass("status-disconected").html("Erro ao se conectar!!").show();
+
+        $(".q").hide();
+
+        $(".error-connected").show();
+    };
+
+    //enviando mensagem ao clicar
+    $('input').keypress(function(){
+        if(event.keyCode == 13)
+            conn.send($(this).val());
+    });
+
+    conn.onmessage = function(e) {
+        console.log(e.data);
+        $('.nomes').append(e.data);
+    };
+
+
+
+
+    var ask = {
+        "session" : 0,
+        "quests" : ["1","2","3"],
+        "texts" : [
+                "Simplesmente uma simulação de texto da indústria tipográfica e de impressos, e vem sendo utilizado desde o século XVI?",
+                "É um fato conhecido de todos que um leitor se distrairá com o conteúdo de texto legível?",
+                "Uma rápida busca por 'lorem ipsum' mostra vários websites ainda??"
+        ],
+        "backgrounds": ["#2196F3", "#FF9800", "#795548"],
+        "send": function(result){
+            conn.send('result:'+result+';ask:'+ask.quests[ask.session]);
+
+            //next question
+            ask.session++;
+
+            /**
+             *
+             * verificando se já finalizou a pesquisa
+             *
+             * **/
+            if(ask.session >= ask.quests.length){
+                $('.q').hide();
+                $(".error-connected").show().prepend("<h1 style='margin:180px 0px; font-size: 3em'><b>FIM</b></h1>");
+            }else{
+                //Mudando as informações da pergunta
+                ask.show_ask();
+            }
+        },
+        "show_ask":function(){
+            $('.q .quest').html(ask.texts[ask.session]);
+            $('body').css({backgroundColor: ask.backgrounds[ask.session]});
+        }
+    };
+
+    $(".btn-ask").on("click", function(){
+        var result = $(this).data("result");
+
+        ask.send(result);
+
+
+    });
+</script>
+</body>
+</html>
